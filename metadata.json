@@ -1,0 +1,5 @@
+{
+  "name": "IPLY - AI Patent Assistant",
+  "description": "An MVP web application for simplifying patent applications using AI analysis and attorney matching.",
+  "requestFramePermissions": []
+}
