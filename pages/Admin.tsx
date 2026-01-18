@@ -109,8 +109,7 @@ export const Admin: React.FC = () => {
           </div>
 
           <div className="p-6">
-            {activeTab === 'attorneys' && (
-              <div className="space-y-6">
+            {activeTab === 'attorneys' && (<div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-slate-500">등록된 전문가 정보를 실시간으로 수정할 수 있습니다.</p>
                   <button onClick={() => alert('전문가 등록은 메인 서비스 페이지의 [전문가 등록] 버튼을 이용해주세요.')} className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-bold text-sm hover:bg-indigo-100">
@@ -118,54 +117,99 @@ export const Admin: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-slate-500 uppercase bg-slate-50">
-                      <tr>
-                        <th className="px-4 py-3">이름</th>
-                        <th className="px-4 py-3">소속</th>
-                        <th className="px-4 py-3">전문분야</th>
-                        <th className="px-4 py-3">상태</th>
-                        <th className="px-4 py-3">관리</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attorneys.map(attorney => (
-                        <tr key={attorney.id} className="border-b border-slate-100 hover:bg-slate-50">
-                          <td className="px-4 py-3 font-bold text-slate-900">
+                <div className="grid gap-6">
+                  {attorneys.map(attorney => (
+                    <div key={attorney.id} className="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:border-indigo-200 transition-all">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-4">
+                          <img src={attorney.imageUrl} alt={attorney.name} className="w-16 h-16 rounded-full object-cover" />
+                          <div>
                             <input 
-                              className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 outline-none w-32"
+                              className="bg-white border border-slate-300 rounded-lg px-3 py-2 font-bold text-slate-900 mb-2 focus:border-indigo-500 outline-none"
                               value={attorney.name}
                               onChange={(e) => handleUpdate(attorney.id, 'name', e.target.value)}
+                              placeholder="이름"
                             />
-                          </td>
-                          <td className="px-4 py-3 text-slate-600">
-                             <input 
-                              className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 outline-none w-40"
+                            <input 
+                              className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-600 focus:border-indigo-500 outline-none w-full"
                               value={attorney.firm}
                               onChange={(e) => handleUpdate(attorney.id, 'firm', e.target.value)}
+                              placeholder="소속"
                             />
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="truncate block w-48 text-slate-500">{attorney.specialty.join(', ')}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button 
-                              onClick={() => handleUpdate(attorney.id, 'status', attorney.status === 'online' ? 'offline' : 'online')}
-                              className={`px-2 py-1 rounded text-xs font-bold ${attorney.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'}`}
-                            >
-                              {attorney.status}
-                            </button>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button onClick={() => handleDelete(attorney.id)} className="text-red-400 hover:text-red-600 p-1">
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleUpdate(attorney.id, 'status', attorney.status === 'online' ? 'offline' : 'online')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${attorney.status === 'online' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
+                          >
+                            {attorney.status === 'online' ? '온라인' : '오프라인'}
+                          </button>
+                          <button onClick={() => handleDelete(attorney.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors">
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-2">전문 분야 (쉼표로 구분)</label>
+                          <input 
+                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none"
+                            value={attorney.specialty.join(', ')}
+                            onChange={(e) => handleUpdate(attorney.id, 'specialty', e.target.value.split(',').map(s => s.trim()))}
+                            placeholder="IT/SW, BM특허, AI모델"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-2">경력 사항 (쉼표로 구분)</label>
+                          <input 
+                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none"
+                            value={attorney.career.join(', ')}
+                            onChange={(e) => handleUpdate(attorney.id, 'career', e.target.value.split(',').map(s => s.trim()))}
+                            placeholder="KAIST 전산학 석사, 삼성전자 IP팀"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-slate-200">
+                        <label className="block text-xs font-bold text-slate-500 mb-2">상담 옵션</label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {attorney.consultationOptions.map((opt, idx) => (
+                            <div key={idx} className="bg-white rounded-lg p-3 border border-slate-200">
+                              <div className="text-xs text-slate-500 mb-1 uppercase font-bold">{opt.type}</div>
+                              <div className="flex items-center gap-2">
+                                <input 
+                                  type="number"
+                                  className="w-24 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-sm focus:border-indigo-500 outline-none"
+                                  value={opt.price}
+                                  onChange={(e) => {
+                                    const newOptions = [...attorney.consultationOptions];
+                                    newOptions[idx].price = parseInt(e.target.value) || 0;
+                                    handleUpdate(attorney.id, 'consultationOptions', newOptions);
+                                  }}
+                                />
+                                <span className="text-xs text-slate-500">원</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                <input 
+                                  type="number"
+                                  className="w-16 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-sm focus:border-indigo-500 outline-none"
+                                  value={opt.duration}
+                                  onChange={(e) => {
+                                    const newOptions = [...attorney.consultationOptions];
+                                    newOptions[idx].duration = parseInt(e.target.value) || 0;
+                                    handleUpdate(attorney.id, 'consultationOptions', newOptions);
+                                  }}
+                                />
+                                <span className="text-xs text-slate-500">분</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
