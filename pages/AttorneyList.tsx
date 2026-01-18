@@ -11,6 +11,7 @@ export const AttorneyList: React.FC = () => {
   const [filteredAttorneys, setFilteredAttorneys] = useState<Attorney[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAttorney, setSelectedAttorney] = useState<Attorney | null>(null);
+  const [selectedConsultationType, setSelectedConsultationType] = useState<'chat' | 'phone' | 'visit' | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Comparison & Add State
@@ -53,14 +54,36 @@ export const AttorneyList: React.FC = () => {
     });
   };
 
-  const handleChatRequest = (attorney: Attorney) => {
+  const handleChatRequest = (attorney: Attorney, type: 'chat' | 'phone' | 'visit') => {
     setSelectedAttorney(attorney);
+    setSelectedConsultationType(type);
   };
 
   const handlePaymentComplete = () => {
-    if (selectedAttorney) {
-      navigate(`/chat/${selectedAttorney.id}`);
+    if (selectedAttorney && selectedConsultationType) {
+      if (selectedConsultationType === 'chat') {
+        navigate(`/chat/${selectedAttorney.id}`);
+      } else {
+        // Show success message for phone/visit
+        alert(`${selectedConsultationType === 'phone' ? '전화' : '방문'} 상담 예약이 완료되었습니다. 곧 담당자가 연락드립니다.`);
+        setSelectedAttorney(null);
+        setSelectedConsultationType(null);
+      }
     }
+  };
+
+  const getConsultationPrice = (attorney: Attorney, type: 'chat' | 'phone' | 'visit') => {
+    const option = attorney.consultationOptions.find(opt => opt.type === type);
+    return option?.price || 0;
+  };
+
+  const getConsultationName = (attorney: Attorney, type: 'chat' | 'phone' | 'visit') => {
+    const typeNames = {
+      chat: '1:1 채팅 상담',
+      phone: '전화 상담',
+      visit: '방문 상담'
+    };
+    return `${attorney.name} ${typeNames[type]}`;
   };
 
   const toggleCompare = (id: string) => {
@@ -203,24 +226,24 @@ export const AttorneyList: React.FC = () => {
                 {/* Consultation Options */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                   {attorney.consultationOptions.map((opt, idx) => (
-                    <div key={idx} className="border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-col items-center justify-center text-center">
-                      <div className="text-slate-400 mb-1 flex items-center gap-1 uppercase text-xs font-bold">
+                    <button
+                      key={idx}
+                      onClick={() => handleChatRequest(attorney, opt.type)}
+                      className="border border-slate-200 rounded-xl p-3 bg-white hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+                    >
+                      <div className="text-slate-400 group-hover:text-indigo-600 mb-1 flex items-center gap-1 uppercase text-xs font-bold transition-colors">
                         {opt.type === 'chat' ? <MessageCircle size={14} /> : opt.type === 'phone' ? <Phone size={14} /> : <User size={14} />} 
                         <span className="ml-1">{opt.type}</span>
                       </div>
-                      <div className="font-bold text-slate-900">{formatPrice(opt.price)}</div>
+                      <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{formatPrice(opt.price)}</div>
                       <div className="text-xs text-slate-500">{opt.duration}분</div>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
-                <button 
-                  onClick={() => handleChatRequest(attorney)}
-                  className="w-full inline-flex items-center justify-center px-8 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md hover:shadow-indigo-200"
-                >
-                  <MessageCircle size={16} className="mr-2" />
-                  상담 신청하기
-                </button>
+                <div className="text-center text-xs text-slate-400 mb-2">
+                  원하는 상담 방식을 선택하세요
+                </div>
               </div>
             </div>
           ))}
@@ -246,7 +269,7 @@ export const AttorneyList: React.FC = () => {
         </div>
       )}
 
-      {/* Comparison Modal (Keep existing logic) */}
+      {/* Comparison Modal */}
       {showCompareModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-8 relative">
@@ -292,7 +315,7 @@ export const AttorneyList: React.FC = () => {
         </div>
       )}
 
-      {/* Add Attorney Modal (Keep existing logic) */}
+      {/* Add Attorney Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
            <div className="bg-white rounded-3xl w-full max-w-md p-8 relative animate-slide-up">
@@ -343,11 +366,14 @@ export const AttorneyList: React.FC = () => {
         </div>
       )}
 
-      {selectedAttorney && (
+      {selectedAttorney && selectedConsultationType && (
         <PaymentModal 
-          serviceName={`${selectedAttorney.name} 1:1 상담`}
-          price={30000}
-          onClose={() => setSelectedAttorney(null)}
+          serviceName={getConsultationName(selectedAttorney, selectedConsultationType)}
+          price={getConsultationPrice(selectedAttorney, selectedConsultationType)}
+          onClose={() => {
+            setSelectedAttorney(null);
+            setSelectedConsultationType(null);
+          }}
           onComplete={handlePaymentComplete}
         />
       )}
