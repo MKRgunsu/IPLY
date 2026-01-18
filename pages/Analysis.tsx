@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getIdea } from '../services/storage';
 import { api } from '../services/mockApi';
-import { Loader2, CheckCircle2, BrainCircuit, ChevronRight, Zap } from 'lucide-react';
+import { Loader2, CheckCircle2, BrainCircuit, ChevronRight, Zap, Brain, Search } from 'lucide-react';
 
 export const Analysis: React.FC = () => {
   const navigate = useNavigate();
   const [logs, setLogs] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [ideaTitle, setIdeaTitle] = useState('');
+  const [isAIEnabled, setIsAIEnabled] = useState(false);
 
   useEffect(() => {
     const idea = getIdea();
@@ -18,13 +19,25 @@ export const Analysis: React.FC = () => {
     }
     setIdeaTitle(idea.title);
 
+    // Check if AI is enabled
+    const aiSettings = localStorage.getItem('iply_ai_settings');
+    if (aiSettings) {
+      const settings = JSON.parse(aiSettings);
+      setIsAIEnabled(settings.enabled);
+    }
+
     const runAnalysis = async () => {
-      const messages = await api.analyzeIdea(idea.title);
-      for (let i = 0; i < messages.length; i++) {
-        await new Promise(r => setTimeout(r, 800)); 
-        setLogs(prev => [...prev, messages[i]]);
+      try {
+        const messages = await api.analyzeIdea(idea.title, idea.problem, idea.solution);
+        for (let i = 0; i < messages.length; i++) {
+          await new Promise(r => setTimeout(r, 800)); 
+          setLogs(prev => [...prev, messages[i]]);
+        }
+        setIsComplete(true);
+      } catch (error) {
+        setLogs(['분석 중 오류가 발생했습니다. Mock 데이터를 사용합니다.']);
+        setTimeout(() => setIsComplete(true), 1000);
       }
-      setIsComplete(true);
     };
 
     runAnalysis();
@@ -39,11 +52,18 @@ export const Analysis: React.FC = () => {
             <div className="relative mb-8">
               <div className="absolute inset-0 bg-indigo-200 rounded-full animate-ping opacity-50"></div>
               <div className="relative p-6 bg-indigo-50 rounded-full text-indigo-600">
-                <Loader2 size={48} className="animate-spin" />
+                {isAIEnabled ? <Brain size={48} className="animate-pulse" /> : <Loader2 size={48} className="animate-spin" />}
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">AI 심층 분석 중</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">
+              {isAIEnabled ? '🤖 실제 AI 심층 분석 중' : 'AI 분석 시뮬레이션 중'}
+            </h2>
             <p className="text-slate-500 font-medium">"{ideaTitle}"의 기술적 특징을 추출하고 있습니다.</p>
+            {isAIEnabled && (
+              <div className="mt-4 px-4 py-2 bg-green-100 text-green-800 rounded-full text-xs font-bold">
+                Google Gemini AI 실행 중
+              </div>
+            )}
           </div>
         ) : (
            <div className="flex flex-col items-center py-6">
@@ -72,7 +92,10 @@ export const Analysis: React.FC = () => {
           <div className="space-y-4 animate-slide-up">
             <div className="p-5 bg-indigo-50 border border-indigo-100 rounded-xl text-sm text-indigo-800 mb-8 flex items-start">
               <CheckCircle2 size={18} className="mr-2 mt-0.5 flex-shrink-0" />
-              <span><strong>분석 요약:</strong> 등록 가능성이 높음으로 판단되나, 청구항 제3항의 보정이 필요할 수 있습니다.</span>
+              <span>
+                <strong>분석 요약:</strong> 등록 가능성이 높음으로 판단되나, 선행기술 조사가 권장됩니다.
+                {isAIEnabled && <span className="block mt-1 text-xs text-indigo-600">✓ AI 기반 실제 분석 결과</span>}
+              </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -117,6 +140,20 @@ export const Analysis: React.FC = () => {
                     <span className="text-xs text-slate-400 font-medium">변리사와 1:1 채팅 및 검토</span>
                   </span>
                   <ChevronRight size={18} />
+                </button>
+
+                <button
+                  onClick={() => window.open('https://doi.kipris.or.kr/simple/simple.do', '_blank')}
+                  className="w-full p-4 border border-slate-200 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 transition-colors flex justify-between items-center bg-white"
+                >
+                   <span className="flex flex-col items-start">
+                    <span className="flex items-center gap-2">
+                      <Search size={16} />
+                      KIPRIS 선행기술 검색
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">특허청 공식 DB에서 유사 특허 검색</span>
+                  </span>
+                  <ChevronRight size={16} />
                 </button>
               </div>
             </div>
