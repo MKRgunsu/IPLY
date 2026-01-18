@@ -1,5 +1,6 @@
 import { Attorney } from '../types';
 import { getAttorneysFromStorage, saveAttorneys } from './storage';
+import { aiService } from './aiService';
 
 // Default Data (Fallback)
 const DEFAULT_ATTORNEYS: Attorney[] = [
@@ -65,7 +66,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const api = {
   getAttorneys: async (): Promise<Attorney[]> => {
-    await delay(300); // Optimized delay
+    await delay(300);
     return getCurrentAttorneys();
   },
 
@@ -83,35 +84,71 @@ export const api = {
       id: `at_${Date.now()}`
     };
     const updated = [newAttorney, ...attorneys];
-    saveAttorneys(updated); // Persist to storage
+    saveAttorneys(updated);
   },
 
-  // Added: Function to update attorney list specifically for Admin
   updateAttorneys: async (newList: Attorney[]): Promise<void> => {
     await delay(300);
     saveAttorneys(newList);
   },
 
-  analyzeIdea: async (title: string): Promise<string[]> => {
-    // Simulate AI analysis process
-    return [
-      `"${title}"에 대한 기술 분류 분석 중...`,
-      '선행 기술 DB 검색 (KIPRIS 연동)...',
-      '특허 등록 가능성 스코어링...',
-      '청구항(Claim) 자동 생성 알고리즘 가동...',
-      '분석 완료.'
-    ];
+  // AI 아이디어 분석 (실제 AI 또는 Mock)
+  analyzeIdea: async (title: string, problem?: string, solution?: string): Promise<string[]> => {
+    try {
+      return await aiService.analyzeIdea(
+        title, 
+        problem || '문제점이 제공되지 않음', 
+        solution || '해결책이 제공되지 않음'
+      );
+    } catch (error) {
+      console.error('Analysis error:', error);
+      // Fallback to mock
+      return [
+        `"${title}"에 대한 기술 분류 분석 중... (Error Fallback)`,
+        '선행 기술 DB 검색 권장',
+        '특허 등록 가능성 평가 필요',
+        '전문가 상담 권장',
+        '분석 완료'
+      ];
+    }
   },
 
-  generateBotResponse: async (userMessage: string): Promise<string> => {
-    await delay(800); // Thinking time
-    const responses = [
-      "말씀하신 부분은 특허법 제29조(신규성)와 관련하여 중요한 쟁점입니다.",
-      "도면을 추가하여 구체적인 실시예를 보여주는 것이 좋습니다.",
-      "청구항은 권리 범위를 결정하므로, 경쟁 회피 설계를 고려해야 합니다.",
-      "우선심사를 신청하면 심사 결과를 3개월 내로 받아보실 수 있습니다.",
-      "추가적인 질문이 있으시면 언제든지 말씀해주세요."
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
+  // 챗봇 응답 생성 (실제 AI 또는 Mock)
+  generateBotResponse: async (userMessage: string, context?: string): Promise<string> => {
+    await delay(800);
+    try {
+      return await aiService.generateChatResponse(userMessage, context);
+    } catch (error) {
+      console.error('Chat error:', error);
+      const responses = [
+        "말씀하신 부분은 특허법 제29조(신규성)와 관련하여 중요한 쟁점입니다.",
+        "도면을 추가하여 구체적인 실시예를 보여주는 것이 좋습니다.",
+        "청구항은 권리 범위를 결정하므로, 경쟁 회피 설계를 고려해야 합니다.",
+        "추가적인 질문이 있으시면 언제든지 말씀해주세요."
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+  },
+
+  // 명세서 초안 생성 (실제 AI 또는 Mock)
+  generateSpecification: async (title: string, problem: string, solution: string, effect: string): Promise<string> => {
+    try {
+      return await aiService.generateSpecification(title, problem, solution, effect);
+    } catch (error) {
+      console.error('Specification error:', error);
+      return `[기술 분야]
+본 발명은 ${title}에 관한 것이다.
+
+[배경 기술]
+종래에는 ${problem}
+
+[해결하려는 과제]
+본 발명은 상기 문제점을 해결하기 위하여 ${solution}을 제공하는 것을 목적으로 한다.
+
+[발명의 효과]
+${effect}
+
+(Error Fallback - Mock 데이터)`;
+    }
   }
 };
