@@ -38,14 +38,14 @@ export const SelfFiling: React.FC = () => {
   }, [chatMessages, isChatOpen]);
 
   const handleNext = () => {
-    if (step === 2 && claimText.trim().length < 20) {
-      alert('권리 범위를 보호받기 위해 청구항을 더 구체적으로 작성해야 합니다 (최소 20자).');
+    if (step === 2 && claimText.trim().length < 10) {
+      alert('청구항을 더 구체적으로 작성해주세요 (최소 10자).');
       return;
     }
     if (step === 3) {
       // Final Warning before external link
-      if(window.confirm('경고: 전문가 검토 없이 제출된 특허는 거절될 확률이 85% 이상입니다. 그래도 특허청 사이트로 이동하시겠습니까?')) {
-         window.open('https://www.patent.go.kr/smart/we/main.do', '_blank');
+      if(window.confirm('특허청 사이트로 이동하시겠습니까?')) {
+         window.open('https://www.patent.go.kr/', '_blank');
       }
       return;
     }
@@ -71,18 +71,15 @@ export const SelfFiling: React.FC = () => {
     <div className="max-w-6xl mx-auto px-4 py-10 animate-fade-in pb-32 flex flex-col md:flex-row gap-8 relative">
       
       {/* Persistent Warning Banner */}
-      <div className="fixed bottom-0 left-0 w-full bg-red-600 text-white z-50 px-4 py-3 shadow-2xl">
+      <div className="fixed bottom-0 left-0 w-full bg-orange-500 text-white z-50 px-4 py-2.5 shadow-lg">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center">
-             <AlertTriangle className="mr-3 animate-pulse" size={24} />
-             <div>
-               <p className="font-bold text-sm md:text-base">경고: 셀프 출원은 거절 위험이 매우 높습니다.</p>
-               <p className="text-xs md:text-sm text-red-200">김시연 변리사(IPLY)의 검토를 받고 안전하게 출원하세요.</p>
-             </div>
+             <AlertTriangle className="mr-2" size={20} />
+             <p className="font-bold text-sm">전문가 검토를 권장합니다</p>
           </div>
           <button 
              onClick={() => navigate('/attorneys')}
-             className="px-4 py-2 bg-white text-red-600 text-xs md:text-sm font-bold rounded-lg hover:bg-red-50 transition-colors shadow-md whitespace-nowrap"
+             className="px-3 py-1.5 bg-white text-orange-600 text-xs font-bold rounded-lg hover:bg-orange-50 transition-colors whitespace-nowrap"
           >
              전문가 연결
           </button>
@@ -94,7 +91,7 @@ export const SelfFiling: React.FC = () => {
         <div className="mb-6 flex items-center justify-between">
            <h2 className="text-2xl font-bold text-slate-900 flex items-center">
              <FileText className="mr-2 text-indigo-600"/> 
-             셀프 명세서 작성
+             셀프 명세서 및 특허출원신청서 작성
            </h2>
            <div className="text-sm font-bold text-slate-500">
              Step {step} / 3
@@ -128,11 +125,9 @@ export const SelfFiling: React.FC = () => {
             {step === 2 && (
               <div className="animate-fade-in">
                 <h3 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">2. 특허청구범위 (Claims)</h3>
-                <div className="bg-red-50 p-4 rounded-lg mb-6 text-sm text-red-800 border border-red-100 flex items-start">
+                <div className="bg-yellow-50 p-4 rounded-lg mb-6 text-sm text-yellow-800 border border-yellow-100 flex items-start">
                   <AlertOctagon size={16} className="mr-2 mt-0.5 flex-shrink-0"/>
-                  <span>
-                    <strong>매우 중요:</strong> 청구항은 법적 권리 범위입니다. 잘못 작성하면 기술을 공개하고도 권리를 못 받을 수 있습니다.
-                  </span>
+                  <span>청구항은 법적 권리 범위를 결정하므로 신중하게 작성해야 합니다.</span>
                 </div>
                 <textarea 
                   value={claimText}
@@ -149,17 +144,9 @@ export const SelfFiling: React.FC = () => {
                    <ExternalLink size={32} className="text-slate-400"/>
                  </div>
                  <h3 className="text-2xl font-bold text-slate-900 mb-4">특허로(KIPO) 이동 준비</h3>
-                 <p className="text-slate-500 mb-8 max-w-md mx-auto">
-                   작성된 명세서를 복사하여 특허청 웹사이트 '특허로'의 서식 작성기에 붙여넣어야 합니다.
+                 <p className="text-slate-500 mb-6 max-w-md mx-auto">
+                   작성된 명세서를 특허청 웹사이트에서 제출할 수 있습니다.
                  </p>
-                 <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-left max-w-md mx-auto">
-                    <h4 className="font-bold text-slate-900 mb-2">체크리스트</h4>
-                    <ul className="space-y-2 text-sm text-slate-600">
-                      <li className="flex items-center"><X size={14} className="text-red-500 mr-2"/> 선행 기술 조사 완료 여부</li>
-                      <li className="flex items-center"><X size={14} className="text-red-500 mr-2"/> 청구항 기재 불비 검토</li>
-                      <li className="flex items-center"><X size={14} className="text-red-500 mr-2"/> 도면 부호 일치 여부</li>
-                    </ul>
-                 </div>
               </div>
             )}
           </div>
@@ -176,17 +163,16 @@ export const SelfFiling: React.FC = () => {
       {/* Right Panel: Advisor / Upsell */}
       <div className="w-full md:w-80 flex-shrink-0 space-y-6">
         {/* Warning Card */}
-        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-4 opacity-10"><AlertTriangle size={100}/></div>
-           <h3 className="font-bold text-lg mb-2 relative z-10">혼자 하기 막막하신가요?</h3>
-           <p className="text-indigo-200 text-sm mb-6 relative z-10">
-             셀프 출원의 거절율은 대리인 선임 대비 4배 높습니다. 작성 중인 내용을 변리사에게 검토받으세요.
+        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
+           <h3 className="font-bold text-lg mb-2">전문가 도움이 필요하신가요?</h3>
+           <p className="text-indigo-100 text-sm mb-4">
+             작성 중인 내용을 변리사에게 검토받으세요.
            </p>
            <button 
              onClick={() => navigate('/attorneys')}
-             className="w-full py-3 bg-white text-indigo-900 font-bold rounded-xl hover:bg-indigo-50 transition-colors shadow-lg relative z-10 text-sm"
+             className="w-full py-2.5 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-colors text-sm"
            >
-             전문가 검토 요청 (유료)
+             전문가 검토 요청
            </button>
         </div>
 
