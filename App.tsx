@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 
 // Pages
 import { Home } from './pages/Home';
+import { About } from './pages/About';
 import { ProcessGuide } from './pages/ProcessGuide';
 import { IdeaInput } from './pages/IdeaInput';
 import { Analysis } from './pages/Analysis';
@@ -20,6 +21,7 @@ const App: React.FC = () => {
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
           <Route path="/process" element={<ProcessGuide />} />
           <Route path="/input" element={<IdeaInput />} />
           <Route path="/analysis" element={<Analysis />} />
