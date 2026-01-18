@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, ChevronLeft, HelpCircle, X, AlertTriangle, MessageSquare, ExternalLink, Send, FileText, AlertOctagon } from 'lucide-react';
+import { ChevronRight, ChevronLeft, AlertTriangle, MessageSquare, ExternalLink, Send, FileText, AlertOctagon, Sparkles } from 'lucide-react';
 import { getIdea } from '../services/storage';
 import { api } from '../services/mockApi';
 
@@ -15,37 +15,69 @@ export const SelfFiling: React.FC = () => {
   const [ideaData, setIdeaData] = useState<any>(null);
   const [claimText, setClaimText] = useState('');
   const [descText, setDescText] = useState('');
+  const [isLoadingSpec, setIsLoadingSpec] = useState(false);
+  const [isAIEnabled, setIsAIEnabled] = useState(false);
   
   // Chat State
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([
     { sender: 'ai', text: '안녕하세요! 명세서 작성 중 어려운 용어나 절차가 있다면 물어보세요.' }
   ]);
   const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const data = getIdea();
     if (data) {
       setIdeaData(data);
-      // AI Draft Generation Mock
-      setDescText(`[기술 분야]\n본 발명은 ${data.title}에 관한 것이다.\n\n[배경 기술]\n종래에는 ${data.problem}\n\n[해결하려는 과제]\n본 발명은 상기 문제점을 해결하기 위하여 ${data.solution}을 제공하는 것을 목적으로 한다.`);
+      
+      // Check AI settings
+      const aiSettings = localStorage.getItem('iply_ai_settings');
+      if (aiSettings) {
+        const settings = JSON.parse(aiSettings);
+        setIsAIEnabled(settings.enabled);
+        
+        // Generate AI specification if enabled
+        if (settings.enabled) {
+          generateAISpecification(data);
+        } else {
+          // Mock specification
+          setDescText(`[기술 분야]\n본 발명은 ${data.title}에 관한 것이다.\n\n[배경 기술]\n종래에는 ${data.problem}\n\n[해결하려는 과제]\n본 발명은 상기 문제점을 해결하기 위하여 ${data.solution}을 제공하는 것을 목적으로 한다.`);
+        }
+      }
     }
   }, []);
 
+  const generateAISpecification = async (data: any) => {
+    setIsLoadingSpec(true);
+    try {
+      const spec = await api.generateSpecification(
+        data.title,
+        data.problem || '',
+        data.solution || '',
+        data.effect || ''
+      );
+      setDescText(spec);
+    } catch (error) {
+      console.error('Specification generation error:', error);
+      setDescText(`[기술 분야]\n본 발명은 ${data.title}에 관한 것이다.\n\n[배경 기술]\n종래에는 ${data.problem}\n\n[해결하려는 과제]\n본 발명은 상기 문제점을 해결하기 위하여 ${data.solution}을 제공하는 것을 목적으로 한다.`);
+    } finally {
+      setIsLoadingSpec(false);
+    }
+  };
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, isChatOpen]);
+  }, [chatMessages]);
 
   const handleNext = () => {
-    if (step === 2 && claimText.trim().length < 10) {
-      alert('청구항을 더 구체적으로 작성해주세요 (최소 10자).');
+    if (step === 2 && claimText.trim().length < 20) {
+      alert('청구항을 더 구체적으로 작성해주세요 (최소 20자).');
       return;
     }
     if (step === 3) {
-      // Final Warning before external link
       if(window.confirm('특허청 사이트로 이동하시겠습니까?')) {
-         window.open('https://www.patent.go.kr/', '_blank');
+         window.open('https://www.patent.go.kr/smart/we/main.do', '_blank');
       }
       return;
     }
@@ -59,12 +91,25 @@ export const SelfFiling: React.FC = () => {
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || isChatLoading) return;
+    
     const userMsg = chatInput;
     setChatMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
     setChatInput('');
-    const response = await api.generateBotResponse(userMsg);
-    setChatMessages(prev => [...prev, { sender: 'ai', text: response }]);
+    setIsChatLoading(true);
+    
+    try {
+      const context = `현재 작성 중인 발명: ${ideaData?.title || '미정'}`;
+      const response = await api.generateBotResponse(userMsg, context);
+      setChatMessages(prev => [...prev, { sender: 'ai', text: response }]);
+    } catch (error) {
+      setChatMessages(prev => [...prev, { 
+        sender: 'ai', 
+        text: '죄송합니다. 일시적인 오류가 발생했습니다.' 
+      }]);
+    } finally {
+      setIsChatLoading(false);
+    }
   };
 
   return (
@@ -91,7 +136,8 @@ export const SelfFiling: React.FC = () => {
         <div className="mb-6 flex items-center justify-between">
            <h2 className="text-2xl font-bold text-slate-900 flex items-center">
              <FileText className="mr-2 text-indigo-600"/> 
-             셀프 명세서 및 특허출원신청서 작성
+             셀프 명세서 작성
+             {isAIEnabled && <Sparkles size={18} className="ml-2 text-yellow-500" />}
            </h2>
            <div className="text-sm font-bold text-slate-500">
              Step {step} / 3
@@ -105,6 +151,11 @@ export const SelfFiling: React.FC = () => {
              <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
              <div className="w-3 h-3 rounded-full bg-green-400"></div>
              <span className="ml-4 text-xs font-mono text-slate-500">New_Patent_Draft_2026.xml</span>
+             {isAIEnabled && (
+               <span className="ml-auto px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">
+                 AI Powered
+               </span>
+             )}
           </div>
 
           <div className="p-8 flex-1">
@@ -112,13 +163,20 @@ export const SelfFiling: React.FC = () => {
               <div className="animate-fade-in">
                 <h3 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">1. 발명의 상세한 설명</h3>
                 <div className="bg-yellow-50 p-4 rounded-lg mb-6 text-sm text-yellow-800 border border-yellow-100">
-                  <strong>Tip:</strong> 앞서 입력하신 아이디어를 바탕으로 AI가 초안을 생성했습니다. 기술적 내용을 보강해주세요.
+                  <strong>Tip:</strong> {isAIEnabled ? 'AI가 실제로 명세서 초안을 생성했습니다.' : 'AI 시뮬레이션 초안입니다.'} 기술적 내용을 보강해주세요.
                 </div>
-                <textarea 
-                  value={descText}
-                  onChange={(e) => setDescText(e.target.value)}
-                  className="w-full h-[400px] p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                />
+                {isLoadingSpec ? (
+                  <div className="flex items-center justify-center h-[400px] text-slate-400">
+                    <Sparkles className="animate-spin mr-2" size={24} />
+                    AI 명세서 생성 중...
+                  </div>
+                ) : (
+                  <textarea 
+                    value={descText}
+                    onChange={(e) => setDescText(e.target.value)}
+                    className="w-full h-[400px] p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                  />
+                )}
               </div>
             )}
 
@@ -181,6 +239,7 @@ export const SelfFiling: React.FC = () => {
            <div className="p-4 border-b border-slate-100 flex items-center bg-indigo-50 rounded-t-2xl">
               <MessageSquare size={18} className="text-indigo-600 mr-2"/>
               <span className="font-bold text-slate-900">AI 작성 도우미</span>
+              {isAIEnabled && <Sparkles size={14} className="ml-auto text-yellow-500" />}
            </div>
            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
               {chatMessages.map((msg, i) => (
@@ -188,6 +247,12 @@ export const SelfFiling: React.FC = () => {
                   {msg.text}
                 </div>
               ))}
+              {isChatLoading && (
+                <div className="text-sm p-3 rounded-xl bg-white border border-slate-200 text-slate-700 flex items-center">
+                  <Sparkles className="animate-spin mr-2" size={14} />
+                  생각 중...
+                </div>
+              )}
               <div ref={chatEndRef}/>
            </div>
            <form onSubmit={handleChatSubmit} className="p-3 border-t border-slate-200">
@@ -197,8 +262,11 @@ export const SelfFiling: React.FC = () => {
                   placeholder="질문 입력..."
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
+                  disabled={isChatLoading}
                 />
-                <button type="submit" className="p-2 bg-indigo-600 text-white rounded-lg"><Send size={16}/></button>
+                <button type="submit" className="p-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50" disabled={isChatLoading}>
+                  <Send size={16}/>
+                </button>
               </div>
            </form>
         </div>
